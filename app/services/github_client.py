@@ -1,5 +1,7 @@
+import io
 import os
 import requests
+import zipfile
 from flask import redirect
 
 class GitHubClient:
@@ -161,37 +163,50 @@ class GitHubClient:
         return tree_res.json()
 
     def get_all_repo_contents(self, session, repo_name):
-        user_refresh_token = session.get('refresh_token')
-        token_url = f"https://{self.domain}/oauth/token"
-        exchange_payload = {
-            "connection": "github",
-            "grant_type": "urn:auth0:params:oauth:grant-type:token-exchange:federated-connection-access-token",
-            "subject_token_type": "urn:ietf:params:oauth:token-type:refresh_token",
-            "requested_token_type": "http://auth0.com/oauth/token-type/federated-connection-access-token",
-            "subject_token": user_refresh_token,
-            "client_id": self.client_id,
-            "client_secret": self.client_secret
-        }
-        res = requests.post(token_url, data=exchange_payload)
-        github_access_token = res.json().get("access_token")
+        # 1. Get token and username (Keep your existing logic for this)
+        github_access_token = self._get_github_access_token(session)
         user_res = requests.get("https://api.github.com/user", headers={"Authorization": f"token {github_access_token}"})
         username = user_res.json().get("login")
-        tree_url = f"https://api.github.com/repos/{username}/{repo_name}/git/trees/main?recursive=1"
-        headers = {"Authorization": f"token {github_access_token}", "Accept": "application/vnd.github.v3+json"}
-        tree_res = requests.get(tree_url, headers=headers)
-        if tree_res.status_code == 404:
-            tree_res = requests.get(tree_url.replace('/main', '/master'), headers=headers)
-        files_metadata = tree_res.json().get('tree', [])
+
+        # --- OPTIMIZATION: Single-Request Zip Archive Fetch ---
+        zip_url = f"https://api.github.com/repos/{username}/{repo_name}/zipball/main"
+        headers = {
+            "Authorization": f"token {github_access_token}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+
+        print(f"[DEBUG] Fetching repository archive: {zip_url}")
+        res = requests.get(zip_url, headers=headers)
+
+        if res.status_code == 404:
+            # Fallback to master if main branch doesn't exist
+            zip_url = zip_url.replace('/main', '/master')
+            res = requests.get(zip_url, headers=headers)
+
+        if res.status_code != 200:
+            print(f"[ERROR] GitHub API returned {res.status_code}: {res.text}")
+            return {}
+
         all_contents = {}
-        for file in files_metadata:
-            if file['type'] == 'blob':
-                if any(file['path'].endswith(ext) for ext in ['.png', '.jpg', '.pdf', '.zip', '.pyc']):
+        valid_extensions = ('.py', '.js', '.ts', '.jsx', '.tsx')
+
+        # 2. Extract strictly in memory
+        with zipfile.ZipFile(io.BytesIO(res.content)) as z:
+            for info in z.infolist():
+                if info.is_dir() or not info.filename.endswith(valid_extensions):
                     continue
-                file_url = f"https://api.github.com/repos/{username}/{repo_name}/contents/{file['path']}"
-                file_res = requests.get(file_url, headers=headers)
-                if file_res.status_code == 200:
-                    import base64
-                    encoded_content = file_res.json().get('content', '')
-                    decoded_content = base64.b64decode(encoded_content).decode('utf-8', errors='ignore')
-                    all_contents[file['path']] = decoded_content
+                
+                try:
+                    # Read bytes and decode to string, ignoring broken characters
+                    content = z.read(info.filename).decode('utf-8', errors='ignore')
+                    
+                    # Optional: GitHub zipballs prefix files with "owner-repo-commitHash/".
+                    # You can split on the first "/" to get the raw repository path.
+                    clean_path = info.filename.split("/", 1)[-1] 
+                    
+                    all_contents[clean_path] = content
+                except Exception as e:
+                    print(f"[WARNING] Skipping {info.filename}: {e}")
+
+        print(f"[DEBUG] Successfully extracted {len(all_contents)} files from archive.")
         return all_contents

@@ -1,162 +1,139 @@
-"""
-javascript.py
-=============
-Regex-based parser for JavaScript and TypeScript files.
-
-Author  : Staff Compiler Engineer / Technical VC Due Diligence Expert
-Python  : 3.10+
-Dependencies: re
-"""
-
 from __future__ import annotations
-
-import re
-from typing import Any
-
+import tree_sitter_javascript as tsjs
+from tree_sitter import Language, Parser
 from ..security import SecurityScanner
-
 
 class JSTSParser:
     """
-    Regex-based compiler front-end for JavaScript and TypeScript files.
-
-    Extracts heuristic complexity, module dependencies, JSDoc comments,
-    exported symbols, route declarations, and delegates security scanning
-    to :class:`SecurityScanner`.
+    Compiler front-end for JavaScript and TypeScript files using Tree-sitter.
     """
-
-    # Complexity signal patterns
-    _COMPLEXITY_RE = re.compile(
-        r"\bif\s*\(|\bfor\s*\(|\bcatch\s*\(|=>\s*\{?|\bfunction\s*\w*\s*\("
-    )
-
-    # require() imports: require('...') or require("...")
-    _REQUIRE_RE = re.compile(r"""require\s*\(\s*['"]([^'"]+)['"]\s*\)""")
-
-    # ES6 import: import ... from '...'
-    _IMPORT_RE = re.compile(r"""import\s+.+?\s+from\s+['"]([^'"]+)['"]""")
-
-    # Named exports: export function Foo, export class Bar, export const baz
-    _EXPORT_RE = re.compile(
-        r"""export\s+(?:default\s+)?(?:async\s+)?(?:function\s*\*?\s*|class\s+|const\s+|let\s+|var\s+)(\w+)"""
-    )
-
-    # JSDoc block: /** ... */  (non-greedy)
-    _JSDOC_RE = re.compile(r"/\*\*(.*?)\*/", re.DOTALL)
-
-    # Express-style routes: app.get('/path', ...) or router.post('/path', ...)
-    _ROUTE_RE = re.compile(
-        r"""(?:app|router)\s*\.\s*(get|post|put|patch|delete|head|options)\s*\(\s*['"]([^'"]+)['"]""",
-        re.IGNORECASE,
-    )
-
-    # Auth middleware hints in route chains (simplified)
-    _AUTH_HINT_RE = re.compile(r"\b(?:auth|jwt|bearer|verifyToken|isAuthenticated|requireLogin)\b")
-
-    # State mutation patterns
-    _MUTATION_RE = re.compile(
-        r"""\.(?:save|commit|flush|write|execute|update|delete|insert|create)\s*\("""
-    )
-
-    # Concurrency patterns
-    _CONCURRENCY_RE = re.compile(
-        r"\basync\b|\bawait\b|\bnew\s+Promise\b|\bsetTimeout\b|\bsetInterval\b"
-    )
-
-    # Exception handler patterns
-    _CATCH_EMPTY_RE = re.compile(r"catch\s*\([^)]*\)\s*\{\s*\}")
-    _CATCH_LOGGED_RE = re.compile(
-        r"""catch\s*\([^)]*\)\s*\{[^}]*(?:console\.|logger\.|log\(|throw\s)[^}]*\}"""
-    )
+    JS_LANGUAGE = Language(tsjs.language())
+    
+    COMPLEXITY_NODES = frozenset({
+        "if_statement", "for_statement", "while_statement", 
+        "catch_clause", "arrow_function", "function_declaration",
+        "switch_statement", "ternary_expression"
+    })
 
     def __init__(self, filepath: str, code: str) -> None:
         self.filepath = filepath
         self.code = code
+        self.parser = Parser(self.JS_LANGUAGE)
 
     def parse(self) -> dict[str, Any]:
-        """Execute Phase-1 analysis on the JS/TS file."""
-        code = self.code
+        tree = self.parser.parse(bytes(self.code, "utf8"))
+        root = tree.root_node
 
-        # ── Complexity ─────────────────────────────────────────────────
-        complexity = len(self._COMPLEXITY_RE.findall(code))
-
-        # ── Imports ────────────────────────────────────────────────────
-        imports = (
-            self._REQUIRE_RE.findall(code) + self._IMPORT_RE.findall(code)
-        )
-        imports = list(dict.fromkeys(imports))
-
-        # ── Exported entities ─────────────────────────────────────────
-        exported = list(dict.fromkeys(self._EXPORT_RE.findall(code)))
-
-        # ── JSDoc → modulePurpose (first block only) ───────────────────
+        complexity = 0
+        imports = []
+        exported_entities = []
+        api_endpoints = []
+        db_models = []
+        state_mutations = 0
+        concurrency_count = 0
+        empty_catches = 0
+        logged_catches = 0
         module_purpose = ""
-        jsdoc_matches = self._JSDOC_RE.findall(code)
-        if jsdoc_matches:
-            # Clean up asterisks and leading/trailing whitespace
-            raw = jsdoc_matches[0]
-            cleaned = re.sub(r"\n\s*\*\s?", " ", raw).strip()
-            module_purpose = cleaned
 
-        # ── Routes ────────────────────────────────────────────────────
-        endpoints: list[str] = []
-        for match in self._ROUTE_RE.finditer(code):
-            method = match.group(1).upper()
-            path = match.group(2)
-            # Check surrounding ~200 chars for auth hints
-            surrounding = code[max(0, match.start() - 50): match.end() + 200]
-            auth = bool(self._AUTH_HINT_RE.search(surrounding))
-            auth_str = "TRUE" if auth else "FALSE"
-            endpoints.append(f"{method} {path} [AUTH: {auth_str}]")
+        # 1. Extract Module Purpose (First block comment)
+        if root.children and root.children[0].type == "comment":
+            comment_text = root.children[0].text.decode("utf8")
+            if comment_text.startswith("/*"):
+                module_purpose = comment_text.strip("/* \n\t")
 
-        # ── DB models (heuristic) ──────────────────────────────────────
-        db_models: list[str] = []
-        sql_re = re.compile(
-            r"""(?:SELECT|CREATE\s+TABLE|FROM|INTO)\s+[`'"]?([\w.]+)[`'"]?""",
-            re.IGNORECASE,
-        )
-        for m in sql_re.finditer(code):
-            name = m.group(1)
-            if name.upper() not in {"FROM", "INTO", "WHERE", "SELECT"}:
-                entry = f"SQL:{name}"
-                if entry not in db_models:
-                    db_models.append(entry)
+        def traverse(node):
+            nonlocal complexity, state_mutations, concurrency_count, empty_catches, logged_catches
+            
+            node_type = node.type
 
-        # ── State mutations ────────────────────────────────────────────
-        state_mutations = len(self._MUTATION_RE.findall(code))
+            # Complexity
+            if node_type in self.COMPLEXITY_NODES:
+                complexity += 1
 
-        # ── Exception quality ──────────────────────────────────────────
-        empty_excepts = len(self._CATCH_EMPTY_RE.findall(code))
-        logged_excepts = len(self._CATCH_LOGGED_RE.findall(code))
-        swallows = empty_excepts > logged_excepts
+            # Concurrency (async/await)
+            if node_type == "await_expression" or (node.is_named and node_type == "function_declaration" and "async" in node.text.decode("utf8")):
+                concurrency_count += 1
 
-        # ── Concurrency ────────────────────────────────────────────────
-        concurrency_density = len(self._CONCURRENCY_RE.findall(code))
-        is_async_heavy = concurrency_density >= 5
+            # State Mutations (Assignment expressions)
+            if node_type == "assignment_expression":
+                state_mutations += 1
 
-        # ── Security ──────────────────────────────────────────────────
-        entropy_count, handles_pii = SecurityScanner.scan_string_literals_js(code)
+            # ES6 Imports
+            if node_type == "import_statement":
+                for child in node.children:
+                    if child.type == "string":
+                        imports.append(child.text.decode("utf8").strip("'\""))
 
-        # Eval/exec as explicit vulnerability
-        vulnerabilities: list[str] = []
-        if re.search(r"\beval\s*\(", code):
+            # CommonJS Imports & API Endpoints & DB Models
+            if node_type == "call_expression":
+                func_node = node.child_by_field_name("function")
+                args_node = node.child_by_field_name("arguments")
+                
+                if func_node and args_node:
+                    func_text = func_node.text.decode("utf8")
+                    
+                    # require()
+                    if func_text == "require":
+                        for arg in args_node.children:
+                            if arg.type == "string":
+                                imports.append(arg.text.decode("utf8").strip("'\""))
+                    
+                    # API Routes (app.get, router.post, etc.)
+                    elif any(method in func_text for method in {".get", ".post", ".put", ".delete", ".patch"}):
+                        if "app" in func_text or "router" in func_text:
+                            route_path = args_node.children[1].text.decode("utf8").strip("'\"") if len(args_node.children) > 1 else "unknown"
+                            api_endpoints.append({"method": func_text.split(".")[-1].upper(), "path": route_path})
+                    
+                    # DB Operations (.save, .find, .query)
+                    elif any(db_op in func_text for db_op in {".save", ".find", ".query", ".execute"}):
+                        db_models.append(func_text.split(".")[0])
+
+            # Exports
+            if node_type == "export_statement":
+                decl = node.child_by_field_name("declaration")
+                if decl and decl.type in {"function_declaration", "class_declaration", "lexical_declaration"}:
+                    name_node = decl.child_by_field_name("name") or (decl.children[1].child_by_field_name("name") if decl.type == "lexical_declaration" else None)
+                    if name_node:
+                        exported_entities.append(name_node.text.decode("utf8"))
+
+            # Exception Handling Quality
+            if node_type == "catch_clause":
+                body = node.child_by_field_name("body")
+                if body:
+                    body_text = body.text.decode("utf8")
+                    if "console." in body_text or "throw" in body_text:
+                        logged_catches += 1
+                    elif len(body.children) <= 2: # {} has 2 children in tree-sitter (the brackets)
+                        empty_catches += 1
+
+            for child in node.children:
+                traverse(child)
+
+        traverse(root)
+
+        # Security Checks
+        entropy_count, handles_pii = SecurityScanner.scan_string_literals_js(self.code)
+        
+        vulnerabilities = []
+        if "eval(" in self.code:
             vulnerabilities.append(f"DANGEROUS: bare 'eval()' call in {self.filepath}")
-        if re.search(r"\bFunction\s*\(", code):
+        if "new Function(" in self.code:
             vulnerabilities.append(f"DANGEROUS: dynamic 'new Function()' call in {self.filepath}")
 
         return {
             "parse_error": None,
-            "imports": imports,
+            "filepath": self.filepath,
+            "imports": list(set(imports)),
             "astComplexity": complexity,
             "modulePurpose": module_purpose,
-            "exportedEntities": exported,
-            "apiEndpoints": endpoints,
-            "databaseModels": db_models,
+            "exportedEntities": list(set(exported_entities)),
+            "apiEndpoints": api_endpoints,
+            "databaseModels": list(set(db_models)),
             "stateMutations": state_mutations,
+            "swallowsExceptions": empty_catches > logged_catches,
+            "concurrencyDensity": concurrency_count,
+            "isAsyncHeavy": concurrency_count >= 5,
             "highEntropySecrets": entropy_count,
             "handlesPII": handles_pii,
             "criticalVulnerabilities": vulnerabilities,
-            "swallowsExceptions": swallows,
-            "concurrencyDensity": concurrency_density,
-            "isAsyncHeavy": is_async_heavy,
         }

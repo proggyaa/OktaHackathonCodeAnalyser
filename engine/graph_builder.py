@@ -65,6 +65,11 @@ class DeepSemanticGraphBuilder:
         self._dependency_map: dict[str, str] = {}
         self._filepaths: list[str] = []
 
+        # --- OPTIMIZATION: O(1) Hash Maps ---
+        self._filepath_set: set[str] = set()
+        self._stem_map: dict[str, list[str]] = {}
+        self._suffix_map: dict[str, list[str]] = {}
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -89,6 +94,24 @@ class DeepSemanticGraphBuilder:
         self._node_data = {}
         self._dependency_map = {}
         self._filepaths = [r["filepath"] for r in file_records]
+
+        # --- OPTIMIZATION: Build O(1) Hash Maps ---
+        self._filepath_set = set(self._filepaths)
+        self._stem_map: dict[str, list[str]] = {}
+        self._suffix_map: dict[str, list[str]] = {}
+
+        for fp in self._filepaths:
+            # 1. Map stems (e.g., "db" -> ["app/db.py", "core/db.py"])
+            stem = Path(fp).stem
+            self._stem_map.setdefault(stem, []).append(fp)
+            
+            # 2. Map all possible suffixes to eliminate '.endswith()' loops
+            # e.g., "app/routes/auth.py" generates keys: "auth", "routes/auth", "app/routes/auth"
+            full_stem = str(Path(fp).with_suffix("")).replace("\\", "/")
+            parts = full_stem.split("/")
+            for i in range(len(parts)):
+                suffix = "/".join(parts[i:])
+                self._suffix_map.setdefault(suffix, []).append(fp)
 
         # ── Phase 1 : parse all files ──────────────────────────────────
         for record in file_records:
@@ -160,40 +183,35 @@ class DeepSemanticGraphBuilder:
 
     def _resolve_import(self, source_fp: str, import_path: str) -> str | None:
         """
-        Attempt to resolve a raw import string to a known filepath.
-
-        Strategy (priority order):
-        1. Exact filepath match.
-        2. Stem match (``db`` → ``db.py``).
-        3. Relative match within the same directory.
-        4. Partial suffix match (``models.user`` → ``models/user.py``).
+        Attempt to resolve a raw import string to a known filepath using O(1) map lookups.
         """
-        # Normalize the import to a path fragment
         frag = import_path.replace(".", "/")
-        source_dir = str(Path(source_fp).parent)
+        source_dir = str(Path(source_fp).parent).replace("\\", "/")
 
         candidates: list[str] = []
 
-        # Stem-based candidates
-        for fp in self._filepaths:
-            stem = Path(fp).stem
-            full_stem = str(Path(fp).with_suffix(""))
+        # 1. Exact filepath match (O(1) Set Lookup)
+        if import_path in self._filepath_set:
+            candidates.append(import_path)
 
-            if stem == import_path:
-                candidates.append(fp)
-            elif full_stem.endswith(frag):
-                candidates.append(fp)
-            elif fp == import_path:
-                candidates.append(fp)
+        # 2. Exact Stem match (O(1) Dict Lookup)
+        if import_path in self._stem_map:
+            candidates.extend(self._stem_map[import_path])
 
-        # Prefer candidates in the same directory
-        same_dir = [c for c in candidates if str(Path(c).parent) == source_dir]
-        if same_dir:
-            return same_dir[0]
-        if candidates:
-            return candidates[0]
-        return None
+        # 3. Partial suffix match (O(1) Dict Lookup - replaces .endswith() loop)
+        if frag in self._suffix_map:
+            candidates.extend(self._suffix_map[frag])
 
+        if not candidates:
+            return None
+
+        # Prefer candidates in the exact same directory (Collision Resolution)
+        for c in candidates:
+            if str(Path(c).parent).replace("\\", "/") == source_dir:
+                return c
+                
+        return candidates[0]
+    
     def _assemble_graph(self) -> None:
         """Draw directed edges for all resolved import relationships."""
         for filepath, data in self._node_data.items():

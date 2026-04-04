@@ -1,7 +1,7 @@
 from flask import Blueprint, session, jsonify
 
 from ..services.github_client import GitHubClient
-from agent.auditor import run_vc_audit
+from agent.auditor import mock_run_vc_audit, run_vc_audit
 
 audit_routes = Blueprint('audit', __name__)
 
