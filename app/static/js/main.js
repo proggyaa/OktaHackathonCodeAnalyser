@@ -41,7 +41,13 @@ async function executeAudit() {
         const startTime = performance.now();
         
         const backendData = await fetchAuditReport(repoName);
-        
+        const warningBanner = document.getElementById('token-exhaustion-banner');
+        if (backendData.error_type === "TOKEN_LIMIT_EXCEEDED") {
+            warningBanner.classList.add('active');
+        } else {
+            warningBanner.classList.remove('active');
+        }
+
         const duration = ((performance.now() - startTime) / 1000).toFixed(2);
         console.log(`[STEP 2] Backend responded in ${duration}s`);
         console.log("[DEBUG] Full Raw Backend Data:", backendData);

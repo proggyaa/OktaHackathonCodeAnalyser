@@ -1,5 +1,6 @@
 from __future__ import annotations
 import tree_sitter_javascript as tsjs
+import tree_sitter_typescript as tsts
 from tree_sitter import Language, Parser
 from ..security import SecurityScanner
 
@@ -8,6 +9,7 @@ class JSTSParser:
     Compiler front-end for JavaScript and TypeScript files using Tree-sitter.
     """
     JS_LANGUAGE = Language(tsjs.language())
+    TSX_LANGUAGE = Language(tsts.language_tsx())
     
     COMPLEXITY_NODES = frozenset({
         "if_statement", "for_statement", "while_statement", 
@@ -18,7 +20,11 @@ class JSTSParser:
     def __init__(self, filepath: str, code: str) -> None:
         self.filepath = filepath
         self.code = code
-        self.parser = Parser(self.JS_LANGUAGE)
+        # Dynamically choose the grammar based on file extension
+        if filepath.endswith(('.tsx', '.ts')):
+            self.parser = Parser(self.TSX_LANGUAGE)
+        else:
+            self.parser = Parser(self.JS_LANGUAGE)
 
     def parse(self) -> dict[str, Any]:
         tree = self.parser.parse(bytes(self.code, "utf8"))
@@ -36,10 +42,13 @@ class JSTSParser:
         module_purpose = ""
 
         # 1. Extract Module Purpose (First block comment)
-        if root.children and root.children[0].type == "comment":
-            comment_text = root.children[0].text.decode("utf8")
-            if comment_text.startswith("/*"):
-                module_purpose = comment_text.strip("/* \n\t")
+        for node in root.children[:10]: # Scan the top of the file
+            if node.type == "comment":
+                comment_text = node.text.decode("utf8")
+                # Look for multi-line comments (/* or /**)
+                if comment_text.startswith("/*"):
+                    module_purpose = comment_text.strip("/* \n\t")
+                    break
 
         def traverse(node):
             nonlocal complexity, state_mutations, concurrency_count, empty_catches, logged_catches

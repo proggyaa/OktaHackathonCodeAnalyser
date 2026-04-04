@@ -1,5 +1,7 @@
 # Entry point for the application
 from app import create_app
+import nest_asyncio
+nest_asyncio.apply()
 
 app = create_app()
 

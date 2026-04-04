@@ -45,11 +45,23 @@ def profile():
 
 @auth_routes.route('/logout')
 def logout():
-    options = {
-        "return_to": url_for("auth_routes.index", _external=True),
-        "state": session.get("user").get("state") if session.get("user") else "logout_state"
-    }
-    print(f"[DEBUG] Logging out with g.store_options: {options}")
-    logout_url = auth0_logout(options)
+    # 1. Clear the local Flask session immediately
+    session.clear()
+
+    # 2. Build the explicit return URL
+    # Ensure this EXACT string is in your Auth0 "Allowed Logout URLs"
+    return_to = url_for("auth_routes.index", _external=True)
     
-    return redirect(logout_url)
+    # 3. Call the logout service
+    # We pass the return_to explicitly to ensure the SDK builds the URL correctly
+    try:
+        # If your auth0_client.logout takes a dict, ensure it maps to 'returnTo'
+        logout_url = auth0_logout({"return_to": return_to})
+        
+        print(f"[DEBUG] Redirecting to Auth0 Logout: {logout_url}")
+        return redirect(logout_url)
+        
+    except Exception as e:
+        print(f"[ERROR] Logout URL generation failed: {e}")
+        # Fallback to index if the SDK fails
+        return redirect(url_for("auth_routes.index"))

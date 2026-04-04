@@ -273,6 +273,46 @@
 
 .close-btn:hover { color: white; }
 
+/* --- System Warning Banner --- */
+.system-warning-banner {
+    background: rgba(255, 159, 67, 0.1); /* 10% opacity of --tile-orange */
+    border: 1px solid var(--tile-orange);
+    color: var(--tile-orange);
+    padding: 16px 24px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    display: none; /* Hidden by default */
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 15px rgba(255, 159, 67, 0.05);
+}
+
+.system-warning-banner.active {
+    display: flex;
+    animation: slideDown 0.3s ease-out;
+}
+
+.system-warning-banner i {
+    font-size: 1.5rem;
+}
+
+.warning-text h4 {
+    margin: 0 0 4px 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.warning-text p {
+    margin: 0;
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+@keyframes slideDown { 
+    from { opacity: 0; transform: translateY(-10px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
 .nd-body h3 {
     font-size: 0.9rem;
     color: var(--text-muted);

@@ -135,8 +135,8 @@ def run_vc_audit(github_token, repo_name, owner, all_contents):
 
     # --- STEP 3: The REDUCE Phase (Executive Report) ---
     print("[DEBUG] Reducing local findings into final VC Report...")
-    api_key = os.getenv("GEMINI_API_KEY")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key={api_key}"
+    api_key = os.getenv("GOOGLE_API_KEY")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview-customtools:generateContent?key={api_key}"
 
     prompt = f"""
     You are a Staff Compiler Engineer and Technical VC Due Diligence Expert. Your task is to perform a deep-dive audit.
@@ -151,10 +151,14 @@ def run_vc_audit(github_token, repo_name, owner, all_contents):
     
     Your task is to provide a rigorous technical assessment based on the graph and the specific local findings.
     Provide a JSON response with exactly these fields:
-    1. "tech_stack_suitability": (Int 1-10)
-    2. "maintenance_risk": (String "High", "Medium", or "Low")
-    3. "summary": (String) A 2-sentence executive summary for an investor.
-    4. "red_flags": (List of strings) Any security or architectural concerns found.
+    {{
+      "velocity_score": (Int 1-100),
+      "tech_debt_risk": (String "High", "Medium", or "Low"),
+      "maintenance_risk": (String "High", "Medium", or "Low"),
+      "executive_summary": (String) A 2-sentence executive summary.,
+      "positive_aspects": (List of strings) Strengths of the architecture.,
+      "critical_flaws": (List of strings) Security or architectural concerns.
+    }}
     """
 
     payload = {
@@ -165,6 +169,21 @@ def run_vc_audit(github_token, repo_name, owner, all_contents):
     print("[DEBUG] Sending Reduce payload to Gemini...")
     ai_response = requests.post(url, json=payload)
     
+    if ai_response.status_code !=200:
+        print("[ERROR] Gemini Token/Quota Exceeded (HTTP 429).")
+        return {
+            "error_type": "TOKEN_LIMIT_EXCEEDED",
+            "report": {
+                "velocity_score": 0,
+                "tech_debt_risk": "Unknown",
+                "maintenance_risk": "Unknown",
+                "executive_summary": "Incomplete Audit: The codebase size exceeded the LLM context window or API quota.",
+                "positive_aspects": [],
+                "critical_flaws": ["System Warning: LLM resource exhausted. Structural graph rendered, but AI analysis was aborted."]
+            },
+            "graph_data": graph_payload # Still return the graph so the UI doesn't break!
+        }
+
     llm_report = {}
     if ai_response.status_code == 200:
         try:

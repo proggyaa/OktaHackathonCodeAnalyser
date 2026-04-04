@@ -12,7 +12,6 @@
         </div>
 
         <div class="nav-actions">
-            <input type="text" class="search-bar" placeholder="Search repository name here...">
             <div class="nav-icons">
                 <i class="fa-regular fa-bell"></i>
                 <i class="fa-regular fa-message"></i>
@@ -51,6 +50,12 @@
         </div>
 
         <div id="results-state" style="display: none;">
+            <div id="token-exhaustion-banner" class="system-warning-banner">
+                <i>⚠️</i> <div class="warning-text">
+                    <h4>LLM Context Limit Exceeded</h4>
+                    <p>The repository size exceeds available AI resources. Structural mapping was completed, but deep semantic reasoning has been bypassed.</p>
+                </div>
+            </div>
             <div class="dashboard-top-grid">
 
                 <div class="gauge-container">
