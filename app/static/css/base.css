@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bg-color: #05050d; /* Cool dark space background */
+    --card-bg: #151521; /* Slightly elevated dark cards */
+    --text-main: #ffffff;
+    --text-muted: #8892b0;
+    --border-color: rgba(255, 255, 255, 0.1);
+
+    --tile-green: #28c76f;
+    --tile-purple: #7367f0;
+    --tile-orange: #ff9f43;
+    --tile-lightblue: #00cfe8;
+    --tile-darkblue: #1e1e2d;
+    --tile-yellow: #ffc107;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.dashboard-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Base Card Styling */
+.card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    padding: 24px;
+    margin-bottom: 24px;
+}

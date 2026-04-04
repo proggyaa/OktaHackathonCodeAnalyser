@@ -1,0 +1,233 @@
+/* CSS Grid/Flexbox structures */
+
+/* Top Navigation */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-greeting {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-greeting h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.status-badge {
+    background-color: rgba(40, 199, 111, 0.15); /* Soft transparent green */
+    color: #28c76f;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.search-bar {
+    padding: 10px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background-color: rgba(255, 255, 255, 0.05); /* Frosted dark glass */
+    color: var(--text-main);
+    width: 250px;
+    font-size: 0.9rem;
+}
+
+.nav-icons i {
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    margin-left: 15px;
+    cursor: pointer;
+}
+
+/* Input Panel */
+.input-panel {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.repo-input-wrapper {
+    max-width: 500px;
+    margin: 20px auto;
+    display: flex;
+    gap: 10px;
+}
+
+#repo-input {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: rgba(0,0,0,0.2);
+    color: white;
+    font-size: 1rem;
+}
+
+/* Dashboard Grid Layout (Top) */
+.dashboard-top-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr; /* Gives graph more room */
+    gap: 24px;
+    margin-bottom: 24px;
+    align-items: stretch; /* Forces graph container to match tiles height */
+}
+
+/* Gauge Chart Area (Updated for Transparent 3D Orbit) */
+.gauge-container {
+    background-color: transparent; /* Blends with global background */
+    box-shadow: none;              /* Removes the white outline/box */
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    min-height: 400px;
+    height: 100%;
+}
+
+.gauge-title {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    z-index: 10;
+    margin: 0;
+}
+
+#graph-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: transparent;
+}
+
+/* Metrics Grid (Tiles) */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 Column layout */
+    gap: 16px;
+    align-content: start;
+}
+
+/* Bottom Panels Grid */
+.dashboard-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.detail-panel {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+
+.breadcrumb {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.breadcrumb span {
+    color: #7367f0;
+    font-weight: 600;
+}
+
+.panel-total {
+    text-align: right;
+}
+
+.panel-total-val {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--tile-purple);
+}
+
+.panel-total-trend {
+    font-size: 0.75rem;
+    color: var(--tile-green);
+}
+
+.detail-list {
+    list-style: none;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.item-left strong {
+    display: block;
+    font-size: 0.95rem;
+}
+
+.item-left span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.item-right {
+    text-align: right;
+}
+
+.item-right strong {
+    display: block;
+    font-size: 1rem;
+}
+
+.item-right span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Loading State */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 50px;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--tile-purple);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}

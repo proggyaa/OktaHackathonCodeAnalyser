@@ -1,0 +1,55 @@
+<!-- Copied from auth0-flask-app/templates/index.html -->
+{% extends "base.html" %}
+
+{% block title %}VC Codebase Auditor{% endblock %}
+
+{% block content %}
+<div class="dashboard-container" style="display: flex; justify-content: center; width: 100%;">
+
+    <div class="card input-panel" style="max-width: 450px; width: 100%; margin: 0 20px;">
+
+        {% if user %}
+            <div class="logged-in">
+                <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                    <div style="width: 65px; height: 65px; border-radius: 50%; border: 2px solid var(--tile-purple); overflow: hidden; display: flex; align-items: center; justify-content: center; background-color: rgba(255,255,255,0.05);">
+                        {% if user.picture %}
+                            <img src="{{ user.picture }}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            <i class="fa-solid fa-user" style="font-size: 24px; color: var(--text-muted);"></i>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <h2 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 600;">Welcome back, {{ user.name }}</h2>
+                {% if user.email %}
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px;">{{ user.email }}</p>
+                {% else %}
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px;">Authorized Investor</p>
+                {% endif %}
+
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <a href="/profile" class="button" style="width: 100%;">
+                        <i class="fa-solid fa-chart-line" style="margin-right: 8px;"></i> Enter Dashboard
+                    </a>
+                    <a href="/logout" class="button" style="width: 100%; background-color: transparent; border: 1px solid var(--border-color); color: var(--text-muted);">
+                        <i class="fa-solid fa-arrow-right-from-bracket" style="margin-right: 8px;"></i> Log Out
+                    </a>
+                </div>
+            </div>
+
+        {% else %}
+            <div class="logged-out">
+                <i class="fa-solid fa-shield-halved" style="font-size: 3rem; color: var(--tile-purple); margin-bottom: 20px;"></i>
+                <h1 style="font-size: 1.6rem; margin-bottom: 12px; font-weight: 700;">Agentic Due Diligence</h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 30px;">
+                    Secure terminal for analyzing repository health, mapping IP moats, and surfacing operational risk.
+                </p>
+                <a href="/login" class="button" style="width: 100%;">
+                    <i class="fa-solid fa-right-to-bracket" style="margin-right: 8px;"></i> Initialize Session
+                </a>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

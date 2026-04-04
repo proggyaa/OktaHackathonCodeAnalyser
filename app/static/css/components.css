@@ -1,0 +1,312 @@
+/* Flip cards, overlays, buttons */
+
+/* Button */
+.button {
+    display: inline-block;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background-color: #7367f0;
+    color: white;
+    transition: 0.2s;
+}
+
+.button:hover {
+    background-color: #5e50ee;
+}
+
+.metric-tile {
+    border-radius: 12px;
+    padding: 20px;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 120px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.tile-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.tile-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-top: 10px;
+}
+
+.tile-trend {
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 6px;
+    border-radius: 10px;
+    width: fit-content;
+    margin-top: 5px;
+}
+
+.bg-green { background-color: var(--tile-green); }
+.bg-purple { background-color: var(--tile-purple); }
+.bg-orange { background-color: var(--tile-orange); }
+.bg-lightblue { background-color: var(--tile-lightblue); }
+.bg-darkblue { background-color: var(--tile-darkblue); }
+.bg-yellow { background-color: var(--tile-yellow); }
+
+/* --- 3D Flip Card Mechanics --- */
+.flip-card {
+    background-color: transparent;
+    perspective: 1000px;
+    cursor: pointer;
+    height: 100%;
+    min-height: 120px;
+}
+
+.flip-card-inner {
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+    transform-style: preserve-3d;
+    display: grid;
+}
+
+.flip-card.is-flipped .flip-card-inner {
+    transform: rotateY(180deg);
+}
+
+.flip-card-front, .flip-card-back {
+    grid-area: 1 / 1;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    border-radius: 12px;
+}
+
+.flip-card-front {
+    transform: rotateY(0deg);
+    z-index: 2;
+}
+
+.flip-card-back {
+    transform: rotateY(180deg);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.metric-tile.flip-card-back {
+    color: white;
+}
+
+.detail-panel.flip-card-back {
+    background-color: var(--card-bg);
+    color: var(--text-main);
+}
+
+.back-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 5px;
+}
+
+.detail-panel.flip-card-back .back-title {
+    border-bottom-color: var(--border-color);
+}
+
+.back-list {
+    list-style: none;
+    font-size: 0.8rem;
+    flex-grow: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.back-list li a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.back-list li a:hover {
+    text-decoration: underline;
+}
+
+.show-more-link {
+    margin-top: auto;
+    padding-top: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: right;
+    text-decoration: underline;
+    color: inherit;
+    opacity: 0.8;
+}
+
+.show-more-link:hover {
+    opacity: 1;
+}
+
+/* --- Scorecard Overlay System --- */
+.metrics-grid {
+    position: relative; /* CRITICAL: Contains the absolute overlay */
+}
+
+.scorecard-overlay {
+    position: absolute;
+    top: -15px; left: -15px; right: -15px; bottom: -15px; /* Slight bleed to cover grid gaps */
+    background: rgba(5, 5, 13, 0.75);
+    backdrop-filter: blur(12px); /* Creates the frosted glass blur effect */
+    z-index: 50;
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.scorecard-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 30px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    overflow-y: auto;
+}
+
+.sc-title { margin: 0; font-size: 1.2rem; color: var(--text-muted); font-weight: 500;}
+.sc-score { font-size: 3rem; font-weight: 800; margin: 10px 0; }
+.sc-bullets { padding-left: 20px; color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px; }
+.sc-bullets li { margin-bottom: 8px; }
+
+.sc-details { margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 20px; }
+.sc-details h3 { font-size: 1.1rem; margin-bottom: 15px; }
+
+.sc-files-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+}
+.file-link {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-color);
+    padding: 8px; border-radius: 6px;
+    color: var(--tile-lightblue);
+    text-decoration: none;
+    cursor: pointer; font-size: 0.8rem; text-align: center; transition: 0.2s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.file-link:hover { background: rgba(0, 207, 232, 0.1); border-color: var(--tile-lightblue); }
+
+.sc-action-btn {
+    width: 100%; padding: 15px; border-radius: 8px; border: none;
+    background: #2d3748; color: white; font-weight: bold;
+    cursor: pointer; transition: 0.2s; margin-top: auto;
+}
+.sc-action-btn:hover { background: #4a5568; }
+/* Make sure the graph container can transition smoothly */
+#graph-container {
+    transition: filter 0.3s ease;
+}
+
+.node-detail-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(5, 5, 13, 0.4);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+
+.node-detail-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    width: 450px;
+    max-width: 90%;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    padding: 24px;
+}
+
+.nd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+
+.nd-header h2 {
+    font-size: 1.2rem;
+    color: var(--tile-lightblue);
+    word-break: break-all;
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.close-btn:hover { color: white; }
+
+.nd-body h3 {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.code-block {
+    background: rgba(0,0,0,0.3);
+    padding: 12px;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: #a0aec0;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.nd-stats {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.nd-stat {
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 8px;
+    flex: 1;
+    text-align: center;
+}
+
+.nd-stat span { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;}
+.nd-stat strong { font-size: 1.2rem; color: white; }
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
