@@ -1,15 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="dashboard-container">
-    <div class="card top-nav">
-        <h2>Audit Terminal</h2>
-        <div class="nav-icons">
-            <a href="/logout"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+    <div class="dashboard-container">
+        <div class="card top-nav">
+        <div class="user-greeting" style="display: flex; align-items: center; gap: 15px;">
+            <h2 style="margin: 0;">Audit Terminal</h2>
+            
+            <span style="font-size: 0.7rem; font-weight: 500; background: rgba(72, 187, 120, 0.1); color: #48bb78; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(72, 187, 120, 0.3); display: flex; align-items: center; gap: 6px; height: fit-content;">
+                <i class="fa-solid fa-lock"></i>
+                Session Authorized
+            </span>
+        </div>
+
+        <div class="nav-actions">
+            <div class="nav-icons">
+                <a href="/logout" title="Log Out"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+            </div>
         </div>
     </div>
 
     <div class="card input-panel" id="input-panel">
         <h3>Select Repository to Audit</h3>
+        <p style="color: var(--text-muted); margin-top: 10px;">The agent will use your GitHub Token to fetch repository metadata and file trees for analysis.</p>
         <div class="repo-input-wrapper">
             <input type="text" id="repo-input" placeholder="e.g., startup/core-api">
             <button onclick="executeAudit()" class="button">Audit Codebase</button>

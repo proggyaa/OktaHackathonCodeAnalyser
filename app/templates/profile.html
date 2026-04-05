@@ -20,9 +20,14 @@
 
     <div class="card input-panel" id="connection-panel">
         <h3><i class="fa-solid fa-vault"></i> Auth0 Token Vault</h3>
-        <p style="color: var(--text-muted); margin: 15px 0;">
-            Grant the AI Agent temporary, read-only access to your repositories to begin the audit.
-        </p>
+        <div class="permission-disclosure" style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid var(--border-color);">
+            <h4 style="font-size: 0.85rem; color: var(--tile-purple); text-transform: uppercase; margin-bottom: 10px;">Agent Scopes</h4>
+            <ul style="font-size: 0.85rem; color: var(--text-muted); list-style: none; padding: 0;">
+                <li style="margin-bottom: 8px;"><strong>Read-Only:</strong> Agent can only view code, not push or delete.</li>
+                <li style="margin-bottom: 8px;"><strong>Public/Private Repos:</strong> Access is limited to repositories you specify.</li>
+                <li style="margin-bottom: 8px;"><strong>No Identity Write:</strong> Agent cannot modify your GitHub profile.</li>
+            </ul>
+        </div>  
         <form action="{{ url_for('github_routes.initiate_connection') }}" method="GET">
             <button type="submit" class="button">
                 <i class="fa-brands fa-github"></i> Authorize GitHub Access
