@@ -122,6 +122,7 @@ class GitHubClient:
 
     def get_github_repos(self, session):
         user_refresh_token = session.get('refresh_token')
+        print(f"[DEBUG] User refresh token: {user_refresh_token}")
         token_url = f"https://{self.domain}/oauth/token"
         exchange_payload = {
             "connection": "github",
