@@ -3,13 +3,16 @@
 export async function verifyConnection() {
     try {
         const res = await fetch('/github/profile');
-        if (res.status === 401 || res.status === 400) {
-            document.getElementById('connection-panel').style.display = 'block';
-            return;
+        const path = window.location.pathname;
+
+        // Redirect logic: If on /audit but NOT authorized, kick back to /profile
+        if (!res.ok && path === '/audit') {
+            window.location.href = '/profile';
         }
-        console.log("[DEBUG] Connection verified with backend. Status:", res);
-        document.getElementById('connection-panel').style.display = 'none';
-        document.getElementById('input-panel').style.display = 'block';
+        // If on /profile but ALREADY authorized, go straight to /audit
+        if (res.ok && path === '/profile') {
+            window.location.href = '/audit';
+        }
     } catch (error) {
         console.error("Auth check error:", error);
     }

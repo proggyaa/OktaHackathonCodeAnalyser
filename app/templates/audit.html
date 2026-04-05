@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard-container">
+    <div class="card top-nav">
+        <h2>Audit Terminal</h2>
+        <div class="nav-icons">
+            <a href="/logout"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+        </div>
+    </div>
+
+    <div class="card input-panel" id="input-panel">
+        <h3>Select Repository to Audit</h3>
+        <div class="repo-input-wrapper">
+            <input type="text" id="repo-input" placeholder="e.g., startup/core-api">
+            <button onclick="executeAudit()" class="button">Audit Codebase</button>
+        </div>
+    </div>
+
+    <div id="report-panel" style="display: none;">
+        <div id="loading-state" class="card loading-container">
+            <div class="spinner"></div>
+            <h3>Ingesting Codebase...</h3>
+            <p style="color: var(--text-muted);">Agent analyzing semantic architecture</p>
+        </div>
+        <div id="results-state" style="display: none;">
+            <div id="token-exhaustion-banner" class="system-warning-banner">
+                <i>⚠️</i> <div class="warning-text">
+                    <h4>LLM Context Limit Exceeded</h4>
+                    <p>The repository size exceeds available AI resources. Structural mapping was completed, but deep semantic reasoning has been bypassed.</p>
+                </div>
+            </div>
+            <div class="dashboard-top-grid">
+
+                <div class="gauge-container">
+                    <span class="gauge-title">Architecture Orbit</span>
+                    <div id="graph-container"></div>
+                </div>
+
+                <div class="metrics-grid">
+
+                    <div class="flip-card" onclick="toggleFlip(this)">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front metric-tile bg-green">
+                                <div class="tile-header"><span>Codebase Volume</span><i class="fa-solid fa-file-code"></i></div>
+                                <div class="tile-value" id="val-total-files">0</div>
+                                <div class="tile-trend">Files Scanned</div>
+                            </div>
+                            <div class="flip-card-back metric-tile bg-green">
+                                <div class="back-title">Top Imported Files</div>
+                                <ul class="back-list" id="list-volume"></ul>
+                                <a href="#" class="show-more-link" onclick="event.stopPropagation(); openScorecard('all');">See full tree...</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flip-card" onclick="toggleFlip(this)">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front metric-tile bg-purple">
+                                <div class="tile-header"><span>Operational Risk</span><i class="fa-solid fa-triangle-exclamation"></i></div>
+                                <div class="tile-value" id="val-op-risk">0</div>
+                                <div class="tile-trend">Bus Factor / Chokepoints</div>
+                            </div>
+                            <div class="flip-card-back metric-tile bg-purple">
+                                <div class="back-title">Key Person Dependency</div>
+                                <ul class="back-list" id="list-risk"></ul>
+                                <a href="#" class="show-more-link" onclick="event.stopPropagation(); openScorecard('risk');">See risk ledger...</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flip-card" onclick="toggleFlip(this)">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front metric-tile bg-orange">
+                                <div class="tile-header"><span>Immediate Liabilities</span><i class="fa-solid fa-shield-halved"></i></div>
+                                <div class="tile-value" id="val-liabilities">0</div>
+                                <div class="tile-trend">CVEs & PII Exposure</div>
+                            </div>
+                            <div class="flip-card-back metric-tile bg-orange">
+                                <div class="back-title">Critical Exposures</div>
+                                <ul class="back-list" id="list-liability"></ul>
+                                <a href="#" class="show-more-link" onclick="event.stopPropagation(); openScorecard('liability');">See security audit...</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flip-card" onclick="toggleFlip(this)">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front metric-tile bg-lightblue">
+                                <div class="tile-header"><span>High-Value IP</span><i class="fa-solid fa-gem"></i></div>
+                                <div class="tile-value" id="val-ip-moat">0%</div>
+                                <div class="tile-trend">Proprietary Density</div>
+                            </div>
+                            <div class="flip-card-back metric-tile bg-lightblue">
+                                <div class="back-title">Core Value Drivers</div>
+                                <ul class="back-list" id="list-ip"></ul>
+                                <a href="#" class="show-more-link" onclick="event.stopPropagation(); openScorecard('asset');">See IP breakdown...</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flip-card" onclick="toggleFlip(this)">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front metric-tile bg-darkblue">
+                            <div class="tile-header"><span>QA Confidence</span><i class="fa-solid fa-vial"></i></div>
+                            <div class="tile-value" id="val-coverage">0%</div>
+                            <div class="tile-trend">Unit Test Coverage</div>
+                        </div>
+                        <div class="flip-card-back metric-tile bg-darkblue">
+                            <div class="back-title">Untested Core Logic</div>
+                            <ul class="back-list" id="list-coverage"></ul>
+                            <a href="#" class="show-more-link" onclick="event.stopPropagation(); openScorecard('coverage');">See coverage report...</a>
+                        </div>
+                    </div>
+                    </div>
+
+                    <div class="flip-card" onclick="toggleFlip(this)">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front metric-tile bg-yellow">
+                            <div class="tile-header"><span>Architecture Smells</span><i class="fa-solid fa-bug"></i></div>
+                            <div class="tile-value" id="val-smells">0</div>
+                            <div class="tile-trend">Structural Anti-patterns</div>
+                        </div>
+                        <div class="flip-card-back metric-tile bg-yellow">
+                            <div class="back-title">Top Debt Generators</div>
+                            <ul class="back-list" id="list-smells"></ul>
+                            <a href="#" class="show-more-link" onclick="event.stopPropagation(); openScorecard('smells');">See structural rules...</a>
+                        </div>
+                    </div>
+                    </div>
+
+                    <div id="scorecard-overlay" class="scorecard-overlay">
+                    <div class="scorecard-content">
+                        <h2 class="sc-title" id="sc-title">Category</h2>
+                        <div class="sc-score" id="sc-score">0/100</div>
+                        <ul class="sc-bullets" id="sc-bullets"></ul>
+
+                        <div class="sc-details">
+                            <h3>Affected Modules</h3>
+                            <div class="sc-files-list" id="sc-files-list"></div>
+                        </div>
+
+                        <button class="sc-action-btn" onclick="closeScorecard()">Close Details</button>
+                    </div>
+                </div>
+
+                </div>
+            </div>
+
+            <div class="dashboard-bottom-grid">
+
+                <div class="flip-card" onclick="toggleFlip(this)">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front detail-panel">
+                            <div class="panel-header">
+                                <div class="breadcrumb">VULNERABILITIES » <span>Critical</span></div>
+                                <div class="panel-total">
+                                    <div class="panel-total-val" id="val-vuln-total">0 Issues</div>
+                                    <div class="panel-total-trend" style="color: #fc8181;">Requires Review</div>
+                                </div>
+                            </div>
+                            <ul class="detail-list" id="vuln-list"></ul>
+                        </div>
+                        <div class="flip-card-back detail-panel">
+                            <div class="back-title">Executive Summary</div>
+                            <p id="summary-text" style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; padding-top: 10px;"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flip-card" onclick="toggleFlip(this)">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front detail-panel">
+                            <div class="panel-header">
+                                <div class="breadcrumb">ARCHITECTURE » <span>Modules</span></div>
+                                <div class="panel-total">
+                                    <div class="panel-total-val" id="val-arch-score" style="color: var(--tile-orange);">0 / 10</div>
+                                    <div class="panel-total-trend">Suitability Score</div>
+                                </div>
+                            </div>
+                            <ul class="detail-list" id="arch-list"></ul>
+                        </div>
+                        <div class="flip-card-back detail-panel">
+                            <div class="back-title">Architecture Summary</div>
+                            <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; padding-top: 10px;">
+                                LLM Analysis confirms structural integrity and suitability of the chosen frameworks for the stated repository intent.
+                            </p>
+                            <a href="#" class="show-more-link" style="color: var(--tile-purple);" onclick="event.stopPropagation(); openScorecard('all'); document.getElementById('scorecard-overlay').scrollIntoView({behavior: 'smooth', block: 'center'});">View dependency graph...</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="resetDashboard()" class="button" style="background-color: var(--tile-darkblue);">Audit Another Repo</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

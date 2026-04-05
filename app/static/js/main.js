@@ -19,6 +19,16 @@ window.resetDashboard = resetDashboard;
 let currentLLMReport = null;
 let currentGraphData = null;
 
+async function init() {
+    const path = window.location.pathname;
+    
+    // Don't run any logic on the home/login page
+    if (path === '/') return;
+
+    // Run the redirect guard for all other pages
+    await verifyConnection();
+}
+
 async function executeAudit() {
     const repoName = document.getElementById('repo-input').value.trim();
     
@@ -116,3 +126,4 @@ async function executeAudit() {
 window.executeAudit = executeAudit;
 
 document.addEventListener("DOMContentLoaded", verifyConnection);
+document.addEventListener("DOMContentLoaded", init);

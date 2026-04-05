@@ -43,6 +43,15 @@ def profile():
         return redirect(url_for('auth_routes.login'))
     return render_template('profile.html', user=user)
 
+@auth_routes.route('/audit')
+def audit_view():
+    """Step 2: The Analysis Terminal"""
+    user = get_user(g.store_options)
+    if not user:
+        return redirect(url_for('auth_routes.login'))
+    # This renders the Repository Input and 3D Graph
+    return render_template('audit.html', user=user)
+
 @auth_routes.route('/logout')
 def logout():
     # 1. Clear the local Flask session immediately
