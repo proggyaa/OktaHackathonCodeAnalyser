@@ -325,7 +325,7 @@ function render3DGraph(graphData) {
         {_flyToNode(node)
 
         setTimeout(() => {
-        openNodeDetails(node);
+        showNodeDetails(node);
     }, 1000);
     })
     // Inside the ForceGraph3D() configuration chain:
@@ -416,7 +416,93 @@ function _flyToNode(node) {
     // Transition duration in milliseconds.
     ANIMATION_MS,
   );
+    setTimeout(() => {
+                showNodeDetails(node);
+            }, 800);
 }
+
+// ─── Private — Node Details Modal ────────────────────────────────────────────
+
+/**
+ * Populates and displays the detail overlay using the new 
+ * 'node-detail-panel' structure.
+ */
+/**
+ * NEW: Populates the detail overlay using your specific HTML IDs
+ *
+ */
+function showNodeDetails(node) {
+    const panel = document.getElementById('node-detail-panel');
+    if (!panel) return;
+    console.log(`[DEBUG][graph3d] showNodeDetails: Populating details for node:`, node);
+    // 1. Filename Extraction
+    document.getElementById('nd-filename').textContent = node.id.split('/').pop();
+
+    // 2. Strict Categorization & Reasoning Logic
+    const hasCritical = node.criticalVulnerabilities && node.criticalVulnerabilities.length > 0;
+    const hasSecrets = node.highEntropySecrets > 0;
+    const badPII = node.handlesPII && typeof node.testCoverage === 'number' && node.testCoverage < 0.50;
+
+    let catName = "Standard Component";
+    let catReason = "Standard architectural module with no severe risks or isolated proprietary IP detected.";
+    let catColor = "#48bb78"; // Green (Neutral/Safe)
+
+    // Security overrides everything
+    if (hasCritical || hasSecrets || badPII) {
+        catName = "Immediate Liability";
+        catColor = "#fc8181"; // Red
+        if (hasCritical) {
+            catReason = `Flagged as a liability due to ${node.criticalVulnerabilities.length} explicitly identified CVEs or structural flaws.`;
+        } else if (hasSecrets) {
+            catReason = `Flagged as a liability due to ${node.highEntropySecrets} hardcoded high-entropy secrets.`;
+        } else {
+            catReason = `Flagged as a liability: Handles PII data but lacks sufficient test coverage (${Math.round(node.testCoverage * 100)}% < 50%).`;
+        }
+    }// Bus factor overrides IP
+    else if (node.busFactorRisk) {
+        catName = "Operational Risk";
+        catColor = "#b794f4"; // Purple
+        catReason = "Flagged as a maintenance risk due to a Bus Factor of 1 (single primary author) on a highly dependent module.";
+    } 
+    // Finally, check if it's an asset
+    else if (node.isProprietaryIP) {
+        catName = "High-Value IP (Asset)";
+        catColor = "#63b3ed"; // Light Blue
+        catReason = "Flagged as a core asset due to a high density of proprietary algorithms, unique mathematics, or core business logic.";
+    }
+
+    // 3. Inject Category Reasoning
+    const container = document.getElementById('nd-classification-container');
+    container.style.borderLeftColor = catColor;
+    const nameEl = document.getElementById('nd-category-name');
+    nameEl.textContent = catName;
+    nameEl.style.color = catColor;
+    
+    document.getElementById('nd-category-reason').textContent = catReason;
+    
+    // 2. Module Purpose mapping
+    document.getElementById('nd-purpose').textContent = node.modulePurpose || "No semantic analysis available for this module.";
+
+    // 3. Stats Mapping
+    document.getElementById('nd-complexity').textContent = node.astComplexity || 0;
+    document.getElementById('nd-indegree').textContent = node.inDegree || 0;
+
+    // 4. Vulnerability Count
+    const vulnCount = Array.isArray(node.criticalVulnerabilities) ? node.criticalVulnerabilities.length : 0;
+    const vulnEl = document.getElementById('nd-vulns');
+    vulnEl.textContent = vulnCount;
+    vulnEl.style.color = vulnCount > 0 ? '#fc8181' : '#48bb78';
+
+    // 5. Reveal Panel
+    panel.style.display = 'block';
+}
+/**
+ * Global helper to close the overlay.
+ */
+window.closeNodeDetails = function() {
+    const panel = document.getElementById('node-detail-panel');
+    if (panel) panel.style.display = 'none';
+};
 
 // ─── Public — filter API ──────────────────────────────────────────────────────
 
@@ -551,6 +637,28 @@ function inspectNodeFromCard(nodeId) {
 
   _flyToNode(targetNode);
 }
+
+/**
+ * NEW: Allows external UI (like flip cards) to trigger a flight to a specific node.
+ */
+window.flyToNodeById = function(nodeId) {
+    if (!_graphData || !Array.isArray(_graphData.nodes)) return;
+    
+    // Find the exact node object from the JSON data
+    const targetNode = _graphData.nodes.find(n => n.id === nodeId);
+    
+    if (targetNode) {
+        // 1. Fly the camera
+        _flyToNode(targetNode);
+        
+        // 2. Open the popup after flight finishes (800ms)
+        setTimeout(() => {
+            showNodeDetails(targetNode);
+        }, 800);
+    } else {
+        console.warn(`[Graph3D] Could not find node with id: ${nodeId}`);
+    }
+};
 
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
