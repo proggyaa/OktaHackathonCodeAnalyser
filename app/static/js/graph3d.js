@@ -333,12 +333,10 @@ function render3DGraph(graphData) {
     .onBackgroundClick(() => {
         if (_orbitInterval) {
             // 1. If it's spinning, STOP it
-            console.log("[DEBUG] Background clicked: Stopping orbit.");
             clearInterval(_orbitInterval);
             _orbitInterval = null;
         } else {
             // 2. If it's stopped, START it
-            console.log("[DEBUG] Background clicked: Starting orbit.");
             startOrbit();
         }
     })
@@ -391,7 +389,6 @@ function render3DGraph(graphData) {
  * @param {object} node  A node object from the graph data.
  */
 function _flyToNode(node) {
-  console.log(`[graph3d] Flying to node: ${node.id}`);
   if (!graph || !node) return;
   // Cancel any active orbit / auto-rotate interval.
   if (_orbitInterval !== null) {
@@ -434,7 +431,6 @@ function _flyToNode(node) {
 function showNodeDetails(node) {
     const panel = document.getElementById('node-detail-panel');
     if (!panel) return;
-    console.log(`[DEBUG][graph3d] showNodeDetails: Populating details for node:`, node);
     // 1. Filename Extraction
     document.getElementById('nd-filename').textContent = node.id.split('/').pop();
 
@@ -523,11 +519,8 @@ window.closeNodeDetails = function() {
  */
 function applyGraphFilter(filter) {
   if (!graph) {
-    console.warn('[DEBUG][graph3d] applyGraphFilter: No graph instance found.');
     return;
   }
-
-  console.log(`[DEBUG][graph3d] applyGraphFilter: Starting filter sequence for: "${filter}"`);
 
   /**
    * Returns true when a node should be "highlighted" by the current filter.
@@ -550,7 +543,6 @@ function applyGraphFilter(filter) {
         match = ((node.inDegree ?? 0) > 10 || (node.astComplexity ?? 0) > 15);
         break;
       default:
-        console.warn(`[DEBUG][graph3d] Unknown filter type: ${filter}`);
         match = true;
     }
     return match;
@@ -563,7 +555,6 @@ function applyGraphFilter(filter) {
     
     const color = CATEGORY_COLORS[getNodeCategory(node)];
     // Log only matches to avoid console flooding
-    console.log(`[DEBUG][graph3d] Node Match Found: ${node.id} | Category: ${getNodeCategory(node)}`);
     return color;
   });
 
@@ -582,7 +573,6 @@ function applyGraphFilter(filter) {
     const tgt = resolveSourceNode(link.target);
 
     if (!src || !tgt) {
-      console.error(`[DEBUG][graph3d] Link resolution failed for Source: ${link.source} or Target: ${link.target}`);
       return LINK_COLORS.unknown;
     }
 
@@ -602,13 +592,9 @@ function applyGraphFilter(filter) {
     if (!src || !tgt) return 0.3;
 
     const bothMatch = isNodeMatch(src) && isNodeMatch(tgt);
-    if (bothMatch) {
-       console.log(`[DEBUG][graph3d] Highlighting Link: ${src.id} -> ${tgt.id}`);
-    }
     return bothMatch ? 2.0 : 0.3;
   });
   
-  console.log(`[DEBUG][graph3d] applyGraphFilter: Logic applied to render loop.`);
 }
 // ─── Public — external card → graph inspection ───────────────────────────────
 

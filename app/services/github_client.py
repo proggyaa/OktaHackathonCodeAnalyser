@@ -122,7 +122,6 @@ class GitHubClient:
 
     def get_github_repos(self, session):
         user_refresh_token = session.get('refresh_token')
-        print(f"[DEBUG] User refresh token: {user_refresh_token}")
         token_url = f"https://{self.domain}/oauth/token"
         exchange_payload = {
             "connection": "github",
@@ -176,7 +175,6 @@ class GitHubClient:
             "Accept": "application/vnd.github.v3+json"
         }
 
-        print(f"[DEBUG] Fetching repository archive: {zip_url}")
         res = requests.get(zip_url, headers=headers)
 
         if res.status_code == 404:
@@ -185,7 +183,6 @@ class GitHubClient:
             res = requests.get(zip_url, headers=headers)
 
         if res.status_code != 200:
-            print(f"[ERROR] GitHub API returned {res.status_code}: {res.text}")
             return {}
 
         all_contents = {}
@@ -207,7 +204,5 @@ class GitHubClient:
                     
                     all_contents[clean_path] = content
                 except Exception as e:
-                    print(f"[WARNING] Skipping {info.filename}: {e}")
-
-        print(f"[DEBUG] Successfully extracted {len(all_contents)} files from archive.")
+                    throwable_error = f"Error processing {info.filename}: {str(e)}"
         return all_contents

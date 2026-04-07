@@ -12,7 +12,6 @@ def audit_repo(repo_name):
     try:
         # Get user profile for owner
         profile = github_client.get_github_profile(session)
-        print(f"[DEBUG] Fetched GitHub profile: {profile}")
         owner = profile.get('login', 'unknown')
         
         # Get all repo contents

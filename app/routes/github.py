@@ -20,7 +20,6 @@ def get_github_profile():
 
 @github_routes.route('/github/repos')
 def get_github_repos():
-    print("[DEBUG] Fetching GitHub repos for user...")
     return github_client.get_github_repos(session)
 
 @github_routes.route('/github/files/<repo_name>')

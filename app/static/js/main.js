@@ -32,8 +32,6 @@ async function init() {
 async function executeAudit() {
     const repoName = document.getElementById('repo-input').value.trim();
     
-    console.log(`%c[AUDIT START] Target Repo: ${repoName}`, "color: #00ff00; font-weight: bold;");
-
     if (!repoName) {
         alert("Please enter a repository name.");
         return;
@@ -47,7 +45,6 @@ async function executeAudit() {
     document.getElementById('results-state').style.display = 'none';
 
     try {
-        console.log("[STEP 1] Fetching from backend... this might take ~60s.");
         const startTime = performance.now();
         
         const backendData = await fetchAuditReport(repoName);
@@ -59,12 +56,9 @@ async function executeAudit() {
         }
 
         const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-        console.log(`[STEP 2] Backend responded in ${duration}s`);
-        console.log("[DEBUG] Full Raw Backend Data:", backendData);
-
+        
         // Check for specific error key in JSON
         if (backendData && backendData.error) {
-            console.error("[ERROR] Backend reported logic error:", backendData.details);
             alert("Audit Failed: " + (backendData.details || "Check backend logs"));
             resetDashboard();
             return;
@@ -81,16 +75,12 @@ async function executeAudit() {
         currentLLMReport = data.llm_report;
         currentGraphData = data.graph_data;
 
-        console.log("[STEP 3] CurrentLLMReport assigned:", currentLLMReport);
-        console.log("[STEP 4] CurrentGraphData assigned:", currentGraphData);
-
         // Validation
         if (!currentLLMReport) {
             console.error("[CRITICAL] llm_report is missing from response!");
         }
         if (!currentGraphData || !currentGraphData.nodes) {
             console.error("[CRITICAL] graph_data or graph_data.nodes is missing!");
-            console.log("Type of currentGraphData:", typeof currentGraphData);
             alert("Audit returned no visualization data (Graph missing).");
             // We continue anyway to try and show the report
         }

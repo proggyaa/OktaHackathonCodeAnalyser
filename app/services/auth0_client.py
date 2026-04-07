@@ -65,5 +65,4 @@ def complete_interactive_login(url, options):
 
 def logout(options):
     formatted_options = SimpleNamespace(**options)
-    print(f"[DEBUG] Logging out with options: {options}")
     return asyncio.run(auth0.logout(formatted_options))

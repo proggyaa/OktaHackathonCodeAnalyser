@@ -67,10 +67,8 @@ def logout():
         # If your auth0_client.logout takes a dict, ensure it maps to 'returnTo'
         logout_url = auth0_logout({"return_to": return_to})
         
-        print(f"[DEBUG] Redirecting to Auth0 Logout: {logout_url}")
         return redirect(logout_url)
         
     except Exception as e:
-        print(f"[ERROR] Logout URL generation failed: {e}")
         # Fallback to index if the SDK fails
         return redirect(url_for("auth_routes.index"))

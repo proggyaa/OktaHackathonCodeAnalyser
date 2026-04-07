@@ -11,7 +11,6 @@ export function toggleFlip(element) {
         document.querySelectorAll('.metrics-grid .flip-card').forEach(card => {
             if (card !== element) card.classList.remove('is-flipped');
         });
-        console.log("[DEBUG] Card flipped. Determining filter for graph update...");
         let filter = 'all';
         if (element.classList.contains('is-flipped')) {
             const front = element.querySelector('.flip-card-front');
@@ -24,7 +23,6 @@ export function toggleFlip(element) {
 
         // Assuming applyGraphFilter is imported or available
         if (typeof applyGraphFilter === 'function') {
-            console.log(`[DEBUG] Applying graph filter: ${filter}`);
             applyGraphFilter(filter);
         }
     }
